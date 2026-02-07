@@ -1,0 +1,64 @@
+{
+  "$schema": "https://openclaw.ai/schemas/config.json",
+  "meta": {
+    "name": "Control Tower",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "profiles": {
+      "anthropic:main": {
+        "provider": "anthropic",
+        "mode": "token"
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "./workspace",
+      "compaction": {
+        "mode": "safeguard"
+      }
+    }
+  },
+  "channels": {
+    "discord": {
+      "enabled": true,
+      "token": "${DISCORD_BOT_TOKEN}",
+      "groupPolicy": "open",
+      "guilds": {
+        "${DISCORD_GUILD_ID}": {
+          "requireMention": false,
+          "channels": {
+            "${ENGINEERING_CHANNEL_ID}": {
+              "enabled": true,
+              "systemPrompt": "{{PERSONA_CTO}}"
+            },
+            "${PRODUCT_CHANNEL_ID}": {
+              "enabled": true,
+              "systemPrompt": "{{PERSONA_CPO}}"
+            },
+            "${MARKETING_CHANNEL_ID}": {
+              "enabled": true,
+              "systemPrompt": "{{PERSONA_CMO}}"
+            },
+            "${FINANCE_CHANNEL_ID}": {
+              "enabled": true,
+              "systemPrompt": "{{PERSONA_CFO}}"
+            }
+          }
+        }
+      }
+    }
+  },
+  "guardrails": {
+    "maxA2AHops": 5,
+    "dailyTokenBudget": 100000,
+    "alertAt": 0.8,
+    "sessionRateLimit": 20
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback"
+  }
+}
