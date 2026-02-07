@@ -15,34 +15,89 @@ Control Tower gives solo founders an AI leadership team that debates decisions, 
 
 Each persona lives in their own Discord channel. They have specialties, personalities, and opinions. They reference each other but defer to their lanes.
 
-## Quick Start
+---
 
-**Time required:** ~25 minutes
+## Quick Start (Docker)
 
-1. **Clone this repo**
-   ```bash
-   git clone https://github.com/Substr8-Labs/control-tower.git
-   cd control-tower
-   ```
+**Time required:** ~15 minutes
 
-2. **Set up Discord** — [Full guide](docs/SETUP.md#discord)
-   - Create a Discord server
-   - Create channels: #general, #engineering, #product, #marketing, #finance
-   - Create a Discord bot and get the token
+### Prerequisites
 
-3. **Set up OpenClaw** — [Full guide](docs/SETUP.md#openclaw)
-   - Install OpenClaw
-   - Copy `openclaw/openclaw.example.json` to `~/.openclaw/openclaw.json`
-   - Fill in your Discord credentials and channel IDs
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- A Discord account
+- An [Anthropic API key](https://console.anthropic.com)
 
-4. **Customize your team** — [Full guide](docs/CUSTOMIZATION.md)
-   - Edit `openclaw/COMPANY.md` with your context
-   - Adjust persona prompts in `personas/` if needed
+### Step 1: Clone and run setup
 
-5. **Launch**
-   ```bash
-   openclaw gateway start
-   ```
+```bash
+git clone https://github.com/Substr8-Labs/control-tower.git
+cd control-tower
+./setup.sh
+```
+
+The setup wizard will:
+- Check that Docker is installed and running
+- Collect your API keys and Discord IDs
+- Generate your configuration
+- Build and start the container
+
+### Step 2: Test it
+
+Post in your #engineering channel:
+
+> Hi Ada, what's your role on this team?
+
+You should get a response from Ada explaining her CTO perspective.
+
+---
+
+## Discord Setup (if you haven't already)
+
+### Create Your Server
+
+1. Open Discord → click `+` → "Create My Own" → "For me and my friends"
+2. Create text channels: `#engineering`, `#product`, `#marketing`, `#finance`
+
+### Create a Bot
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application" → name it (e.g., "Control Tower")
+3. Go to "Bot" → "Add Bot"
+4. Enable under **Privileged Gateway Intents**:
+   - ✅ Message Content Intent
+   - ✅ Server Members Intent
+5. Click "Reset Token" → copy and save it
+6. Go to "OAuth2" → "URL Generator":
+   - Scopes: `bot`
+   - Permissions: `Send Messages`, `Read Message History`, `View Channels`
+7. Copy the URL → open in browser → add bot to your server
+
+### Get IDs
+
+Enable Developer Mode: Discord Settings → Advanced → Developer Mode
+
+- **Server ID:** Right-click server name → Copy Server ID
+- **Channel IDs:** Right-click each channel → Copy Channel ID
+
+---
+
+## Commands
+
+```bash
+# View logs
+docker compose logs -f
+
+# Stop
+docker compose down
+
+# Restart
+docker compose restart
+
+# Rebuild after changes
+docker compose up -d --build
+```
+
+---
 
 ## How It Works
 
@@ -69,6 +124,37 @@ Each persona lives in their own Discord channel. They have specialties, personal
 >
 > Grace is right — one feature, tight feedback loop. Fewer variables.
 
+---
+
+## Customization
+
+### Change Company Context
+
+Edit `.env` and set `COMPANY_NAME`, then restart:
+
+```bash
+docker compose restart
+```
+
+For deeper context, mount a custom company file:
+
+```yaml
+# In docker-compose.yml, add under volumes:
+- ./my-company.md:/home/tower/.openclaw/workspace/COMPANY.md:ro
+```
+
+### Modify Personas
+
+Edit files in `personas/`, then rebuild:
+
+```bash
+docker compose up -d --build
+```
+
+See [CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for details.
+
+---
+
 ## Guardrails
 
 Control Tower ships with safety defaults:
@@ -80,19 +166,57 @@ Control Tower ships with safety defaults:
 
 See [GUARDRAILS.md](docs/GUARDRAILS.md) for details.
 
-## Customization
+---
 
-- **Personas:** Edit prompts in `personas/` to adjust personality/focus
-- **Company context:** Edit `openclaw/COMPANY.md` with your specifics
-- **Add personas:** Create new `.md` files and add channels to config
+## Troubleshooting
 
-See [CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for details.
+### Bot doesn't respond
 
-## Requirements
+```bash
+# Check if container is running
+docker compose ps
 
-- [OpenClaw](https://github.com/openclaw/openclaw) v2026.2+
-- Discord account + bot token
-- Anthropic API key (or other LLM provider)
+# Check logs for errors
+docker compose logs --tail 50
+
+# Verify bot is in server and has permissions
+```
+
+Common issues:
+- Message Content Intent not enabled in Discord Developer Portal
+- Bot not invited to server (check OAuth URL again)
+- Wrong channel IDs in .env
+
+### Container won't start
+
+```bash
+# Check what's wrong
+docker compose logs
+
+# Rebuild from scratch
+docker compose down
+docker compose up -d --build
+```
+
+### Reset everything
+
+```bash
+docker compose down -v  # -v removes volumes too
+./setup.sh              # Start fresh
+```
+
+---
+
+## Manual Installation
+
+If you prefer not to use Docker, see [docs/SETUP.md](docs/SETUP.md) for manual installation instructions.
+
+**Note:** Manual setup is more complex and requires familiarity with:
+- Node.js and npm
+- systemd services (Linux)
+- OpenClaw configuration
+
+---
 
 ## Support
 
@@ -102,4 +226,6 @@ See [CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for details.
 
 ---
 
-**Built by [Substr8 Labs](https://substr8labs.com)** — Provable agent infrastructure.
+**Built with [OpenClaw](https://github.com/openclaw/openclaw)** — Powered by open-source AI infrastructure.
+
+**[Substr8 Labs](https://substr8labs.com)** — Provable agent infrastructure.

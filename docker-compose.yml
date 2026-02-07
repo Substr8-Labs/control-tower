@@ -1,0 +1,32 @@
+# Control Tower - AI Executive Team
+# 
+# Quick start:
+#   1. Copy .env.example to .env and fill in values
+#   2. Run: docker compose up -d
+#   3. Check logs: docker compose logs -f
+#
+# Stop: docker compose down
+
+services:
+  control-tower:
+    build: .
+    container_name: control-tower
+    restart: unless-stopped
+    ports:
+      - "18789:18789"
+    env_file:
+      - .env
+    volumes:
+      # Persist workspace (memory, notes, etc.)
+      - tower-workspace:/home/tower/.openclaw/workspace
+      # Optional: mount custom COMPANY.md
+      # - ./my-company.md:/home/tower/.openclaw/workspace/COMPANY.md:ro
+    healthcheck:
+      test: ["CMD", "openclaw", "gateway", "probe"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  tower-workspace:

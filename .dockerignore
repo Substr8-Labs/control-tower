@@ -1,0 +1,22 @@
+# Git
+.git/
+.gitignore
+
+# Secrets
+.env
+*.env.*
+
+# Docs (not needed in image)
+*.md
+!personas/*.md
+docs/
+
+# IDE
+.vscode/
+.idea/
+
+# GitHub
+.github/
+
+# Notion (templates, not runtime)
+notion/
