@@ -1,167 +1,260 @@
----
-name: control-tower-setup
-description: Set up Control Tower - an AI Executive Team for your business. Creates CTO, CPO, CMO, CFO personas with Discord channels, shared Notion workspace, and guardrails. Use when someone wants to set up Control Tower, create AI executive personas, build an AI leadership team, or configure multi-agent business coordination.
-metadata:
-  openclaw:
-    emoji: "🗼"
-    requires:
-      config: ["channels.discord"]
----
+# Control Tower Setup Skill
 
-# Control Tower Setup
+> Conversational onboarding that bootstraps a Control Tower instance for a new customer.
 
-Transform your OpenClaw into an AI Executive Team. Creates specialized personas (CTO, CPO, CMO, CFO) with their own Discord channels, shared context, and intelligent guardrails.
+## Overview
 
-## What You Get
+This skill guides a founder through setting up their AI Executive Team via Discord DM. The skill IS the onboarding — no separate wizard needed.
 
-- **Executive Personas** — AI C-suite with specialized expertise
-- **Discord Channels** — Dedicated channel per persona
-- **Shared Knowledge** — Notion workspace for decisions, goals, context
-- **Guardrails** — Cost controls, rate limits, loop prevention
-- **Board Meetings** — Cross-persona strategic discussions
+## Flow
 
-## Quick Setup
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. DISCOVERY (DM)                                          │
+│     User DMs bot → Bot asks about their business            │
+│     - Company name                                          │
+│     - Business type                                         │
+│     - Biggest challenge                                     │
+│     - Team size (solo/small team)                           │
+├─────────────────────────────────────────────────────────────┤
+│  2. INVITE                                                  │
+│     Bot generates OAuth link with required permissions      │
+│     User creates server + invites bot                       │
+│     Bot detects guild join event                            │
+├─────────────────────────────────────────────────────────────┤
+│  3. SETUP (Server)                                          │
+│     Bot creates channels:                                   │
+│     - #strategy (Chief of Staff)                            │
+│     - #engineering (Ada - CTO)                              │
+│     - #product (Grace - CPO)                                │
+│     - #marketing (Tony - CMO)                               │
+│     - #ops (Sentinel - SRE)                                 │
+│     Bot writes config with personalized system prompts      │
+├─────────────────────────────────────────────────────────────┤
+│  4. ACTIVATION                                              │
+│     Config hot-reloads                                      │
+│     Bot posts welcome message in #strategy                  │
+│     Guides user to their first interaction                  │
+└─────────────────────────────────────────────────────────────┘
+```
 
-When user asks to set up Control Tower:
+## Critical Requirements
 
-1. **Ask which personas they want:**
-   - CTO (Chief Technology Officer) — Architecture, technical decisions
-   - CPO (Chief Product Officer) — Roadmap, features, user insights
-   - CMO (Chief Marketing Officer) — Positioning, growth, content
-   - CFO (Chief Financial Officer) — Budget, metrics, runway
-   - Custom persona (user-defined)
+### Session Isolation
 
-2. **Collect prerequisites:**
-   - Discord server (must have Manage Channels permission)
-   - Guild ID from Discord (right-click server → Copy Server ID)
-   - Notion API key (optional, for knowledge base)
-
-3. **Create the infrastructure:**
-   - Discord category: "🗼 Control Tower"
-   - Channel per persona: #engineering, #product, #marketing, #finance
-   - Deploy persona-specific system prompts
-
-4. **Configure guardrails** (see references/guardrails.md)
-
-5. **Test with a board meeting prompt**
-
-## Creating Discord Channels
-
-Use the discord tool to create the structure:
+Each customer server MUST be an isolated session:
 
 ```json
 {
-  "action": "categoryCreate",
-  "guildId": "<GUILD_ID>",
-  "name": "🗼 Control Tower"
+  "guilds": {
+    "<customer-guild-id>": {
+      "isolated": true,
+      "sessionLabel": "customer:<company-slug>",
+      "channels": { ... }
+    }
+  }
 }
 ```
 
-Then create channels under the category:
+This ensures:
+- Customer context stays in their server
+- Admin chatter doesn't leak to customers
+- Each founder gets a "fresh" AI team
 
-```json
-{
-  "action": "channelCreate",
-  "guildId": "<GUILD_ID>",
-  "name": "engineering",
-  "type": 0,
-  "parentId": "<CATEGORY_ID>",
-  "topic": "Ada's lab — architecture, technical decisions, code"
-}
+### Bot Permissions
+
+OAuth invite URL needs these scopes:
+- `bot` — basic bot functionality
+- `applications.commands` — slash commands (future)
+
+Bot permissions integer: `8` (Administrator) or granular:
+- `MANAGE_CHANNELS` (16) — create channels
+- `SEND_MESSAGES` (2048) — respond
+- `READ_MESSAGE_HISTORY` (65536) — context
+- `MANAGE_MESSAGES` (8192) — edit own messages
+
+**Invite URL template:**
+```
+https://discord.com/api/oauth2/authorize?client_id=<BOT_CLIENT_ID>&permissions=75776&scope=bot
 ```
 
-Repeat for each persona channel. See references/channel-config.md for full specs.
+### System Prompts
 
-## Persona System Prompts
-
-Each persona needs a unique system prompt. The base structure:
+Each channel gets a persona with company context injected:
 
 ```
-You are [NAME], the [ROLE] of [COMPANY].
+You are Ada ✦, CTO of {company_name}.
 
-Your expertise: [DOMAIN AREAS]
-Your communication style: [TRAITS]
-Your decision framework: [APPROACH]
+Context: {company_name} is a {business_type}. 
+Current focus: {main_challenge}.
+Founder: {founder_name} (solo founder).
 
-You collaborate with other executives:
-- [OTHER PERSONA 1] in #[CHANNEL]
-- [OTHER PERSONA 2] in #[CHANNEL]
-
-When you need expertise outside your domain, tag the relevant exec.
-When decisions require consensus, call for a board meeting.
+[... rest of persona definition ...]
 ```
 
-See references/personas.md for complete prompts.
+## Implementation
 
-## Guardrails Configuration
+### Files
 
-Control Tower requires guardrails to prevent runaway costs:
-
-```yaml
-guardrails:
-  maxA2AHops: 5          # Kill runaway loops
-  dailyTokenBudget: 100000
-  alertAt: 0.8           # Alert at 80% budget
-  sessionRateLimit: 20/min
-  approvalThreshold: 10000  # Tokens requiring approval
+```
+control-tower-setup/
+├── SKILL.md              # This file
+├── scripts/
+│   ├── generate-invite.sh    # Generate OAuth URL
+│   ├── create-channels.sh    # Discord API channel creation
+│   └── write-config.sh       # Update openclaw.json
+├── templates/
+│   ├── prompts/
+│   │   ├── strategy.txt
+│   │   ├── engineering.txt
+│   │   ├── product.txt
+│   │   ├── marketing.txt
+│   │   └── ops.txt
+│   └── welcome-message.txt
+└── reference/
+    └── discord-api.md
 ```
 
-Apply via gateway config. See references/guardrails.md for implementation.
+### Script: generate-invite.sh
 
-## Notion Integration (Optional)
+```bash
+#!/bin/bash
+# Generate Discord OAuth invite URL
 
-If user provides Notion API key, create the knowledge workspace:
+BOT_CLIENT_ID="${1:-1469265115248463995}"  # Substr8 AI bot
+PERMISSIONS="75776"  # MANAGE_CHANNELS + SEND_MESSAGES + READ_MESSAGE_HISTORY
 
-1. Company Context database
-2. Decisions Log database
-3. Strategic Questions database
-4. Board Meetings database
+echo "https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${PERMISSIONS}&scope=bot"
+```
 
-See references/notion-template.md for database schemas.
+### Script: create-channels.sh
 
-## Testing the Setup
+```bash
+#!/bin/bash
+# Create Control Tower channels in a Discord server
 
-After setup, run a test board meeting:
+GUILD_ID="$1"
+BOT_TOKEN="$2"
 
-> "Call a board meeting to discuss our Q1 priorities"
+CHANNELS=("strategy" "engineering" "product" "marketing" "ops")
 
-Each persona should:
-- Respond in their channel
-- Stay in their expertise lane
-- Reference shared context if available
-- Tag other execs when needed
+for channel in "${CHANNELS[@]}"; do
+  curl -s -X POST "https://discord.com/api/v10/guilds/${GUILD_ID}/channels" \
+    -H "Authorization: Bot ${BOT_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\": \"${channel}\", \"type\": 0}"
+done
+```
 
-## Troubleshooting
+### Script: write-config.sh
 
-**Personas not responding:**
-- Check Discord channel permissions
-- Verify bot has access to channels
-- Confirm channel routing in openclaw config
+```bash
+#!/bin/bash
+# Add guild to OpenClaw config with isolated session
 
-**Loops between personas:**
-- Check maxA2AHops guardrail is active
-- Review session logs for loop patterns
+GUILD_ID="$1"
+COMPANY_SLUG="$2"
+CONFIG_PATH="${HOME}/.openclaw/openclaw.json"
 
-**Cost overruns:**
-- Verify dailyTokenBudget is set
-- Check if alertAt threshold is firing
-- Review which persona is burning tokens
+# Read channel IDs (would be passed from create-channels output)
+# Write to config using jq
+# Trigger hot-reload via SIGUSR1
+```
 
-## Capabilities
+## Conversation Script
 
-This skill provides:
+### Phase 1: Discovery
 
-- `setup_control_tower` — Full guided setup flow
-- `add_persona` — Add a new executive persona
-- `remove_persona` — Remove an executive persona
-- `configure_guardrails` — Set cost/rate limits
-- `connect_notion` — Link Notion knowledge base
-- `run_board_meeting` — Trigger cross-persona discussion
-- `show_status` — Display Control Tower health
+**Trigger:** User DMs bot with setup intent ("set up", "get started", "control tower", etc.)
 
-## References
+**Bot response:**
+```
+Hey! 👋 Ready to set up your AI Executive Team.
 
-- [Persona Prompts](references/personas.md) — System prompts for each executive
-- [Channel Config](references/channel-config.md) — Discord channel specifications
-- [Guardrails](references/guardrails.md) — Safety configuration
-- [Notion Template](references/notion-template.md) — Knowledge base schema
+Quick questions so I can personalize your setup:
+
+1. What's your company/project called?
+2. What are you building? (SaaS, agency, marketplace, etc.)
+3. What's your #1 challenge right now?
+   - Prioritization / too many ideas
+   - Shipping speed
+   - No sounding board for decisions
+   - Marketing / positioning
+   - Something else?
+
+Just reply naturally — no need for a specific format.
+```
+
+### Phase 2: Invite
+
+**After collecting info:**
+```
+Got it! Here's what I'll set up for {company_name}:
+
+**Your AI Executive Team:**
+• **Chief of Staff** (#strategy) — priorities, planning, decisions
+• **Ada, CTO** (#engineering) — architecture, code, tech
+• **Grace, CPO** (#product) — features, roadmap, users
+• **Tony, CMO** (#marketing) — positioning, growth, messaging
+• **Sentinel, SRE** (#ops) — deploys, monitoring, alerts
+
+**Next step:** Add me to your Discord server.
+
+👉 [Click here to invite me]({invite_url})
+
+Once I'm in, I'll create the channels and configure everything. Come back here and tell me when it's done!
+```
+
+### Phase 3: Setup
+
+**On guild join event:**
+```
+🎉 I'm in! Setting up {company_name} Control Tower...
+
+Creating channels...
+✓ #strategy
+✓ #engineering  
+✓ #product
+✓ #marketing
+✓ #ops
+
+Configuring your AI team...
+✓ Personas loaded
+✓ Company context injected
+✓ Session isolated
+
+**You're live!** Head to #strategy and tell your Chief of Staff what's on your mind today.
+```
+
+## Edge Cases
+
+### User already has a server
+Ask if they want to use existing server or create new one. If existing, ask for invite with bot permissions.
+
+### User has existing channels
+Ask if they want to rename/repurpose or create new ones. Offer to configure personas for their existing channel names.
+
+### Bot lacks permissions
+Detect permission error, explain what's needed, provide new invite link with correct permissions.
+
+### Multiple founders
+Ask about team structure, potentially create additional channels or adjust personas.
+
+## Testing Checklist
+
+- [ ] DM discovery flow captures company info
+- [ ] Invite link has correct permissions
+- [ ] Channels created successfully on guild join
+- [ ] System prompts include company context
+- [ ] Sessions are properly isolated
+- [ ] Config hot-reloads without restart
+- [ ] Welcome message posts to #strategy
+- [ ] Personas respond appropriately in each channel
+
+## Future Enhancements
+
+1. **Notion integration** — Create workspace template, connect for persistent memory
+2. **Slash commands** — `/standup`, `/priorities`, `/review`
+3. **Scheduled check-ins** — Daily/weekly prompts from Chief of Staff
+4. **Analytics dashboard** — Track usage, decisions made, velocity metrics
+5. **Team expansion** — Add/remove personas based on needs

@@ -1,0 +1,15 @@
+🎉 **Welcome to {{company}} Control Tower!**
+
+Your AI Executive Team is ready:
+
+**#strategy** — Your Chief of Staff. Big picture, priorities, decisions.
+**#engineering** — Ada ✦, your CTO. Architecture, code, tech.
+**#product** — Grace 🚀, your CPO. Features, roadmap, users.
+**#marketing** — Tony 🔥, your CMO. Positioning, growth, story.
+**#ops** — Sentinel 🛡️, your SRE. Deploys, monitoring, uptime.
+
+---
+
+**Start here:** Tell me what's on your mind today. What's the #1 thing you're trying to figure out this week?
+
+I'll help you break it down and point you to the right team member for deeper dives.
