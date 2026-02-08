@@ -10,6 +10,7 @@ Ubuntu 24.04 LTS
 ├── OpenClaw (latest)
 ├── Tailscale (for tunnel)
 ├── control-tower-agent (setup helper)
+├── qrencode (QR code generation)
 ├── nginx (reverse proxy)
 ├── certbot (SSL)
 └── ufw (firewall, configured)
@@ -34,19 +35,24 @@ Ubuntu 24.04 LTS
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  3. CONSOLE OUTPUT                                          │
+│  3. CONSOLE OUTPUT (with QR code)                           │
 │                                                             │
 │  ╔═══════════════════════════════════════════════════════╗  │
 │  ║                                                       ║  │
 │  ║   🏗️  CONTROL TOWER                                   ║  │
 │  ║                                                       ║  │
-│  ║   Your instance is ready for setup!                   ║  │
+│  ║   Scan to continue setup:                             ║  │
 │  ║                                                       ║  │
-│  ║   1. Join Discord: https://discord.gg/substr8         ║  │
-│  ║   2. Go to #onboarding                                ║  │
-│  ║   3. Enter your pairing code:                         ║  │
+│  ║   █████████████████████████████                       ║  │
+│  ║   ██ ▄▄▄▄▄ ██▀▄▀▄█▀▄██ ▄▄▄▄▄ ██                       ║  │
+│  ║   ██ █   █ ██▄▀█▀▄▄ ██ █   █ ██                       ║  │
+│  ║   ██ █▄▄▄█ ██▀▄ ▄▀█▄██ █▄▄▄█ ██                       ║  │
+│  ║   ██▄▄▄▄▄▄▄█▄█▄█ █▄█▄█▄▄▄▄▄▄▄██                       ║  │
+│  ║   █████████████████████████████                       ║  │
 │  ║                                                       ║  │
-│  ║              🔑  FALCON-7291                          ║  │
+│  ║   discord.gg/hw2r5gRPM2?code=FALCON-7291              ║  │
+│  ║                                                       ║  │
+│  ║   Or type the code manually:  🔑 FALCON-7291          ║  │
 │  ║                                                       ║  │
 │  ║   Waiting for pairing...                              ║  │
 │  ║                                                       ║  │
@@ -246,6 +252,111 @@ Environment=HOME=/home/claw
 
 [Install]
 WantedBy=multi-user.target
+```
+
+### /opt/control-tower/show-qr.sh
+
+Generates QR code for console display:
+
+```bash
+#!/bin/bash
+# Display QR code with Discord invite + pairing code
+
+PAIRING_CODE=$(cat /etc/control-tower/pairing-code)
+DISCORD_INVITE="discord.gg/hw2r5gRPM2"
+FULL_URL="https://${DISCORD_INVITE}?code=${PAIRING_CODE}"
+
+clear
+echo ""
+echo "  🏗️  CONTROL TOWER"
+echo ""
+echo "  Scan to continue setup:"
+echo ""
+
+# Generate QR code in terminal (UTF-8 block characters)
+qrencode -t UTF8 -m 2 "$FULL_URL"
+
+echo ""
+echo "  ${DISCORD_INVITE}?code=${PAIRING_CODE}"
+echo ""
+echo "  Or type the code manually:  🔑 ${PAIRING_CODE}"
+echo ""
+echo "  Waiting for pairing..."
+echo ""
+```
+
+### /opt/control-tower/first-boot.sh
+
+First boot initialization:
+
+```bash
+#!/bin/bash
+# Control Tower VPS first boot setup
+
+set -e
+
+# Generate unique instance ID
+INSTANCE_ID="ct_$(openssl rand -hex 6)"
+echo "$INSTANCE_ID" > /etc/control-tower/instance-id
+
+# Generate human-readable pairing code (WORD-NNNN)
+WORDS=("FALCON" "PHOENIX" "THUNDER" "ROCKET" "NEBULA" "COSMOS" "VECTOR" "PRISM" "ORBIT" "CIPHER")
+WORD=${WORDS[$RANDOM % ${#WORDS[@]}]}
+NUMBER=$(printf "%04d" $((RANDOM % 10000)))
+PAIRING_CODE="${WORD}-${NUMBER}"
+echo "$PAIRING_CODE" > /etc/control-tower/pairing-code
+
+# Set permissions
+chmod 600 /etc/control-tower/*
+chown claw:claw /etc/control-tower/*
+
+# Enable and start agent
+systemctl enable control-tower-agent
+systemctl start control-tower-agent
+
+# Show QR code on console (tty1)
+/opt/control-tower/show-qr.sh > /dev/tty1 2>&1 &
+
+# Also set as MOTD for SSH sessions
+cp /opt/control-tower/show-qr.sh /etc/update-motd.d/99-control-tower
+chmod +x /etc/update-motd.d/99-control-tower
+
+echo "Control Tower initialized: ${INSTANCE_ID} / ${PAIRING_CODE}"
+```
+
+### /opt/control-tower/generate-qr.js
+
+Node.js QR generation for embedding in bot messages:
+
+```javascript
+// Generate QR code as base64 PNG for Discord embeds
+const QRCode = require('qrcode');
+
+async function generateQR(url) {
+  try {
+    // Generate as data URL (base64 PNG)
+    const dataUrl = await QRCode.toDataURL(url, {
+      width: 256,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    });
+    return dataUrl;
+  } catch (err) {
+    console.error('QR generation failed:', err);
+    return null;
+  }
+}
+
+module.exports = { generateQR };
+
+// CLI usage
+if (require.main === module) {
+  const url = process.argv[2] || 'https://discord.gg/hw2r5gRPM2';
+  generateQR(url).then(console.log);
+}
 ```
 
 ## Security
