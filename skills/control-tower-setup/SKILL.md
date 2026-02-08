@@ -1,95 +1,351 @@
 # Control Tower Setup Skill
 
-> Conversational onboarding that bootstraps a Control Tower instance for a new customer.
+> Guest onboarding on Substr8 Labs Discord → VPS pairing → customer leaves with their own independent stack.
 
-## Overview
+## The Model
 
-This skill guides a founder through setting up their AI Executive Team via Discord DM. The skill IS the onboarding — no separate wizard needed.
+**We host:** Onboarding conversation + community + setup API
+**They own:** Their bot, their server, their VPS, their OpenClaw, their data
 
-## Flow
+This is BYOB (Bring Your Own Bot) by design. We never touch their tokens.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         SUBSTR8 INFRASTRUCTURE                          │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐  │
+│  │  Discord Server  │    │  Setup API       │    │  VPS Template    │  │
+│  │  #onboarding     │◄──►│  WebSocket       │◄──►│  (Marketplace)   │  │
+│  └──────────────────┘    └──────────────────┘    └──────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ▲
+                                    │ Pairing + Commands
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CUSTOMER INFRASTRUCTURE                         │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐  │
+│  │  Their Discord   │◄──►│  Their OpenClaw  │◄──►│  Their VPS       │  │
+│  │  Server          │    │  Gateway         │    │  (Hostinger/DO)  │  │
+│  └──────────────────┘    └──────────────────┘    └──────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+## Flow (Final)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  1. DISCOVERY (DM)                                          │
-│     User DMs bot → Bot asks about their business            │
-│     - Company name                                          │
-│     - Business type                                         │
-│     - Biggest challenge                                     │
-│     - Team size (solo/small team)                           │
-├─────────────────────────────────────────────────────────────┤
-│  2. INVITE                                                  │
-│     Bot generates OAuth link with required permissions      │
-│     User creates server + invites bot                       │
-│     Bot detects guild join event                            │
-├─────────────────────────────────────────────────────────────┤
-│  3. SETUP (Server)                                          │
-│     Bot creates channels:                                   │
-│     - #strategy (Chief of Staff)                            │
-│     - #engineering (Ada - CTO)                              │
-│     - #product (Grace - CPO)                                │
-│     - #marketing (Tony - CMO)                               │
-│     - #ops (Sentinel - SRE)                                 │
-│     Bot writes config with personalized system prompts      │
-├─────────────────────────────────────────────────────────────┤
-│  4. ACTIVATION                                              │
-│     Config hot-reloads                                      │
-│     Bot posts welcome message in #strategy                  │
-│     Guides user to their first interaction                  │
+│  PHASE 1: WELCOME (Substr8 Labs Discord)                    │
+│                                                             │
+│  Customer joins via public invite                           │
+│  → Bot DMs them or directs to #onboarding                   │
+│  → "Hey! Looking to set up your AI Executive Team?"         │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 2: DISCOVERY                                         │
+│                                                             │
+│  Bot learns about their business:                           │
+│  - Company name                                             │
+│  - What they're building                                    │
+│  - Biggest challenge                                        │
+│  - Technical comfort level                                  │
+│                                                             │
+│  This context will personalize their Control Tower.         │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 3: VPS DEPLOYMENT                                    │
+│                                                             │
+│  Bot provides one-click deploy link:                        │
+│  → "Click here to deploy your VPS on Hostinger/DO/etc"      │
+│  → Customer deploys (takes 1-2 minutes)                     │
+│  → VPS boots, shows pairing code: FALCON-7291               │
+│  → Customer enters code in Discord                          │
+│  → VPS now paired to their Discord identity                 │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 4: DISCORD BOT CREATION                              │
+│                                                             │
+│  Bot guides them through:                                   │
+│  □ Create Discord app (Developer Portal)                    │
+│  □ Create bot, copy token                                   │
+│  □ SSH into VPS, paste token (never shared with us)         │
+│  □ Create their Discord server                              │
+│  □ Invite their bot                                         │
+│                                                             │
+│  Bot verifies each step via paired VPS connection.          │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 5: AUTO-CONFIGURE                                    │
+│                                                             │
+│  Via VPS tunnel, bot automatically:                         │
+│  → Creates channels in their server (#strategy, etc)        │
+│  → Writes OpenClaw config with personalized prompts         │
+│  → Starts the gateway                                       │
+│  → Posts welcome message in #strategy                       │
+│                                                             │
+│  Customer watches it happen in real-time.                   │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 6: LAUNCH                                            │
+│                                                             │
+│  Customer has independent stack:                            │
+│  - Their VPS (they own it)                                  │
+│  - Their Discord server with channels                       │
+│  - Their bot running on their OpenClaw                      │
+│  - Personas personalized for their business                 │
+│  - Zero ongoing dependency on us                            │
+│                                                             │
+│  VPS tunnel enters support mode (dormant).                  │
+│  Customer can re-enable for future help.                    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Critical Requirements
+## Substr8 Labs Server Setup
 
-### Session Isolation
+### Required Channels
 
-Each customer server MUST be an isolated session:
+| Channel | Purpose |
+|---------|---------|
+| #welcome | Landing spot, rules, how to get started |
+| #onboarding | Where the setup conversation happens |
+| #support | Post-setup help |
+| #showcase | Customers share wins |
 
-```json
-{
-  "guilds": {
-    "<customer-guild-id>": {
-      "isolated": true,
-      "sessionLabel": "customer:<company-slug>",
-      "channels": { ... }
-    }
-  }
-}
-```
+### Bot Behavior
 
-This ensures:
-- Customer context stays in their server
-- Admin chatter doesn't leak to customers
-- Each founder gets a "fresh" AI team
+**On member join:**
+- Wait 30 seconds (let them read #welcome)
+- DM: "Hey! Welcome to Substr8 Labs. Ready to set up your AI Executive Team?"
+- If no DM possible, ping in #onboarding
 
-### Bot Permissions
+**In #onboarding:**
+- Each customer gets a private thread (Discord threads)
+- Conversation is isolated per-user
+- Bot guides them through setup
 
-OAuth invite URL needs these scopes:
-- `bot` — basic bot functionality
-- `applications.commands` — slash commands (future)
+## Conversation Script
 
-Bot permissions integer: `8` (Administrator) or granular:
-- `MANAGE_CHANNELS` (16) — create channels
-- `SEND_MESSAGES` (2048) — respond
-- `READ_MESSAGE_HISTORY` (65536) — context
-- `MANAGE_MESSAGES` (8192) — edit own messages
-
-**Invite URL template:**
-```
-https://discord.com/api/oauth2/authorize?client_id=<BOT_CLIENT_ID>&permissions=75776&scope=bot
-```
-
-### System Prompts
-
-Each channel gets a persona with company context injected:
+### Welcome DM
 
 ```
-You are Ada ✦, CTO of {company_name}.
+Hey! 👋 Welcome to Substr8 Labs.
 
-Context: {company_name} is a {business_type}. 
-Current focus: {main_challenge}.
-Founder: {founder_name} (solo founder).
+I'm here to help you set up **Control Tower** — your AI Executive Team.
 
-[... rest of persona definition ...]
+Quick question: Are you here to...
+1. Learn more about Control Tower
+2. Set up Control Tower for my business
+3. Just exploring
+
+(Reply with 1, 2, or 3)
+```
+
+### Option 2: Setup Flow
+
+#### Step 1: Discovery
+
+```
+Awesome! Let's get you set up. First, tell me about your business:
+
+1. **What's your company/project called?**
+2. **What are you building?** (SaaS, agency, marketplace, etc.)
+3. **What's your #1 challenge right now?**
+
+Just reply naturally — I'll pick out the details.
+```
+
+#### Step 2: Technical Check
+
+```
+Got it! {company_name} sounds great.
+
+Quick tech check — which best describes you?
+
+1. **Technical founder** — comfortable with command line, can set up a VPS
+2. **Semi-technical** — can follow instructions, might need some hand-holding
+3. **Non-technical** — need maximum guidance
+
+This helps me adjust the setup instructions.
+```
+
+#### Step 3: Create Discord Bot
+
+```
+Perfect. Let's create your AI team's brain.
+
+**Step 1: Create a Discord Bot**
+
+1. Go to: https://discord.com/developers/applications
+2. Click "New Application"
+3. Name it something like "{company_name} AI" or "Control Tower"
+4. Go to the "Bot" tab on the left
+5. Click "Reset Token" and copy the token
+
+⚠️ **Keep this token secret!** Don't share it with anyone (including me).
+
+When you have the token copied somewhere safe, reply "done" and I'll guide you through the next step.
+```
+
+#### Step 4: Bot Settings
+
+```
+Great! Now let's configure your bot:
+
+Still in the Discord Developer Portal:
+
+1. **Bot tab** → scroll down to "Privileged Gateway Intents"
+2. Enable these:
+   - ✅ PRESENCE INTENT
+   - ✅ SERVER MEMBERS INTENT  
+   - ✅ MESSAGE CONTENT INTENT
+3. Click "Save Changes"
+
+Reply "done" when ready.
+```
+
+#### Step 5: Create Server
+
+```
+Now let's create your workspace:
+
+1. In Discord (the app, not the developer portal)
+2. Click the "+" button on the left sidebar
+3. Choose "Create My Own"
+4. Choose "For me and my friends" (or "For a club")
+5. Name it "{company_name} HQ" or whatever you like
+
+Reply with the server name when it's created.
+```
+
+#### Step 6: Invite Bot
+
+```
+Perfect! Now let's invite your bot to {server_name}:
+
+1. Back in Developer Portal → your app → "OAuth2" tab
+2. Click "URL Generator"
+3. Under SCOPES, check: `bot`
+4. Under BOT PERMISSIONS, check:
+   - Manage Channels
+   - Send Messages
+   - Read Message History
+   - Manage Messages
+5. Copy the generated URL at the bottom
+6. Open that URL in your browser
+7. Select {server_name} and authorize
+
+Reply "done" when your bot appears in the server (it'll be offline for now — that's normal).
+```
+
+#### Step 7: OpenClaw Setup
+
+**For technical founders:**
+```
+Now let's get OpenClaw running. Where do you want to host it?
+
+1. **My laptop/desktop** — easiest to start, runs when your computer is on
+2. **A VPS** — runs 24/7, I'll help you set one up
+3. **I already have a server** — just give me the setup commands
+
+(Reply 1, 2, or 3)
+```
+
+**Option 1: Local setup**
+```
+Let's install OpenClaw on your machine:
+
+# Install OpenClaw
+npm install -g openclaw
+
+# Run the setup wizard
+openclaw init
+
+When it asks for your Discord bot token, paste the one you saved earlier.
+
+Run through the wizard, then reply "done" when OpenClaw is running.
+```
+
+**Option 2: VPS setup**
+```
+I recommend these VPS providers (cheap, reliable):
+- **Hetzner** — €4/month (best value)
+- **DigitalOcean** — $6/month
+- **Vultr** — $6/month
+
+Once you have a VPS:
+
+# SSH into your server
+ssh root@your-server-ip
+
+# Install Node.js
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
+
+# Install OpenClaw
+npm install -g openclaw
+
+# Run setup
+openclaw init
+
+Reply when you're at the OpenClaw setup wizard.
+```
+
+#### Step 8: Configure Channels
+
+```
+Almost there! Let's create your Control Tower channels.
+
+In your Discord server, create these channels:
+- #strategy
+- #engineering
+- #product
+- #marketing
+- #ops
+
+Then run this in your OpenClaw directory:
+
+openclaw config
+
+Add each channel with these personas... [provide config snippet]
+```
+
+#### Step 9: Personalization
+
+```
+Last step — let's personalize your AI team.
+
+I'm going to give you a config snippet. This has your company context baked in.
+
+Copy this into your openclaw.json (or run `openclaw config` and paste when prompted):
+
+[Generated config with their company name, business type, etc.]
+```
+
+#### Step 10: Launch
+
+```
+🎉 **You're live!**
+
+Your Control Tower is running:
+- Your bot, your server, your data
+- AI Executive Team personalized for {company_name}
+- Zero dependency on us
+
+**What to do now:**
+1. Go to #strategy in your server
+2. Tell your Chief of Staff what's on your mind today
+3. Explore the other channels — each has a different specialty
+
+**Need help?** Come back to #support anytime.
+
+**Love it?** Share your setup in #showcase!
+
+Go build something great. 🚀
 ```
 
 ## Implementation
@@ -100,161 +356,77 @@ Founder: {founder_name} (solo founder).
 control-tower-setup/
 ├── SKILL.md              # This file
 ├── scripts/
-│   ├── generate-invite.sh    # Generate OAuth URL
-│   ├── create-channels.sh    # Discord API channel creation
-│   └── write-config.sh       # Update openclaw.json
+│   ├── generate-config.sh    # Generate personalized config
+│   └── validate-setup.sh     # Verify customer's setup
 ├── templates/
+│   ├── config/
+│   │   └── openclaw.template.json
 │   ├── prompts/
 │   │   ├── strategy.txt
 │   │   ├── engineering.txt
 │   │   ├── product.txt
 │   │   ├── marketing.txt
 │   │   └── ops.txt
-│   └── welcome-message.txt
+│   └── messages/
+│       ├── welcome-dm.txt
+│       ├── discovery.txt
+│       ├── tech-check.txt
+│       ├── create-bot.txt
+│       ├── bot-settings.txt
+│       ├── create-server.txt
+│       ├── invite-bot.txt
+│       ├── openclaw-local.txt
+│       ├── openclaw-vps.txt
+│       ├── configure-channels.txt
+│       └── launch.txt
 └── reference/
     └── discord-api.md
 ```
 
-### Script: generate-invite.sh
+### Channel Config for Substr8 Labs
 
-```bash
-#!/bin/bash
-# Generate Discord OAuth invite URL
+Add to openclaw.json:
 
-BOT_CLIENT_ID="${1:-1469265115248463995}"  # Substr8 AI bot
-PERMISSIONS="75776"  # MANAGE_CHANNELS + SEND_MESSAGES + READ_MESSAGE_HISTORY
-
-echo "https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${PERMISSIONS}&scope=bot"
+```json
+{
+  "guilds": {
+    "1469264343635067018": {
+      "channels": {
+        "<onboarding-channel-id>": {
+          "enabled": true,
+          "systemPrompt": "You are the Control Tower Setup Assistant at Substr8 Labs.\n\nYour job: Guide founders through setting up their own Control Tower instance.\n\nYou are friendly, patient, and technical. You can adjust your explanations based on the user's comfort level.\n\nNEVER ask for or store their bot token. Guide them to keep it private.\n\nFollow the setup flow in SKILL.md step by step. Don't skip ahead. Confirm each step before moving on."
+        }
+      }
+    }
+  }
+}
 ```
-
-### Script: create-channels.sh
-
-```bash
-#!/bin/bash
-# Create Control Tower channels in a Discord server
-
-GUILD_ID="$1"
-BOT_TOKEN="$2"
-
-CHANNELS=("strategy" "engineering" "product" "marketing" "ops")
-
-for channel in "${CHANNELS[@]}"; do
-  curl -s -X POST "https://discord.com/api/v10/guilds/${GUILD_ID}/channels" \
-    -H "Authorization: Bot ${BOT_TOKEN}" \
-    -H "Content-Type: application/json" \
-    -d "{\"name\": \"${channel}\", \"type\": 0}"
-done
-```
-
-### Script: write-config.sh
-
-```bash
-#!/bin/bash
-# Add guild to OpenClaw config with isolated session
-
-GUILD_ID="$1"
-COMPANY_SLUG="$2"
-CONFIG_PATH="${HOME}/.openclaw/openclaw.json"
-
-# Read channel IDs (would be passed from create-channels output)
-# Write to config using jq
-# Trigger hot-reload via SIGUSR1
-```
-
-## Conversation Script
-
-### Phase 1: Discovery
-
-**Trigger:** User DMs bot with setup intent ("set up", "get started", "control tower", etc.)
-
-**Bot response:**
-```
-Hey! 👋 Ready to set up your AI Executive Team.
-
-Quick questions so I can personalize your setup:
-
-1. What's your company/project called?
-2. What are you building? (SaaS, agency, marketplace, etc.)
-3. What's your #1 challenge right now?
-   - Prioritization / too many ideas
-   - Shipping speed
-   - No sounding board for decisions
-   - Marketing / positioning
-   - Something else?
-
-Just reply naturally — no need for a specific format.
-```
-
-### Phase 2: Invite
-
-**After collecting info:**
-```
-Got it! Here's what I'll set up for {company_name}:
-
-**Your AI Executive Team:**
-• **Chief of Staff** (#strategy) — priorities, planning, decisions
-• **Ada, CTO** (#engineering) — architecture, code, tech
-• **Grace, CPO** (#product) — features, roadmap, users
-• **Tony, CMO** (#marketing) — positioning, growth, messaging
-• **Sentinel, SRE** (#ops) — deploys, monitoring, alerts
-
-**Next step:** Add me to your Discord server.
-
-👉 [Click here to invite me]({invite_url})
-
-Once I'm in, I'll create the channels and configure everything. Come back here and tell me when it's done!
-```
-
-### Phase 3: Setup
-
-**On guild join event:**
-```
-🎉 I'm in! Setting up {company_name} Control Tower...
-
-Creating channels...
-✓ #strategy
-✓ #engineering  
-✓ #product
-✓ #marketing
-✓ #ops
-
-Configuring your AI team...
-✓ Personas loaded
-✓ Company context injected
-✓ Session isolated
-
-**You're live!** Head to #strategy and tell your Chief of Staff what's on your mind today.
-```
-
-## Edge Cases
-
-### User already has a server
-Ask if they want to use existing server or create new one. If existing, ask for invite with bot permissions.
-
-### User has existing channels
-Ask if they want to rename/repurpose or create new ones. Offer to configure personas for their existing channel names.
-
-### Bot lacks permissions
-Detect permission error, explain what's needed, provide new invite link with correct permissions.
-
-### Multiple founders
-Ask about team structure, potentially create additional channels or adjust personas.
 
 ## Testing Checklist
 
-- [ ] DM discovery flow captures company info
-- [ ] Invite link has correct permissions
-- [ ] Channels created successfully on guild join
-- [ ] System prompts include company context
-- [ ] Sessions are properly isolated
-- [ ] Config hot-reloads without restart
-- [ ] Welcome message posts to #strategy
-- [ ] Personas respond appropriately in each channel
+- [ ] New member gets welcome DM
+- [ ] Discovery flow captures company info
+- [ ] Tech check adjusts instruction detail level
+- [ ] Bot creation steps are clear and correct
+- [ ] Invite URL generation works
+- [ ] OpenClaw install instructions work (local + VPS)
+- [ ] Generated config is valid
+- [ ] Channels get created with right personas
+- [ ] Customer can interact with their AI team
+- [ ] Privacy: we never see their token
 
-## Future Enhancements
+## Pricing Tiers (Future)
 
-1. **Notion integration** — Create workspace template, connect for persistent memory
-2. **Slash commands** — `/standup`, `/priorities`, `/review`
-3. **Scheduled check-ins** — Daily/weekly prompts from Chief of Staff
-4. **Analytics dashboard** — Track usage, decisions made, velocity metrics
-5. **Team expansion** — Add/remove personas based on needs
+| Tier | Price | Includes |
+|------|-------|----------|
+| Free | $0 | DIY setup, community support |
+| Guided | $49 | Live onboarding session, 30-day support |
+| Premium | $149/mo | Managed hosting, priority support, updates |
+| Enterprise | Custom | Multi-team, SSO, dedicated instance |
+
+## Success Metrics
+
+- Conversion: Joins → Starts Setup → Completes Setup
+- Time to first AI interaction
+- 7-day retention (still using Control Tower)
+- NPS / satisfaction survey
