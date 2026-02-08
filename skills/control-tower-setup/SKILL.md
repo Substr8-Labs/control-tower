@@ -1,134 +1,167 @@
 ---
 name: control-tower-setup
-description: Set up Control Tower - an AI Executive Team for solo founders. Creates Discord channels with CTO, CPO, CMO personas. Use when user wants to set up Control Tower, create an AI leadership team, or configure executive personas for their business.
+description: Set up Control Tower - an AI Executive Team for your business. Creates CTO, CPO, CMO, CFO personas with Discord channels, shared Notion workspace, and guardrails. Use when someone wants to set up Control Tower, create AI executive personas, build an AI leadership team, or configure multi-agent business coordination.
+metadata:
+  openclaw:
+    emoji: "🗼"
+    requires:
+      config: ["channels.discord"]
 ---
 
 # Control Tower Setup
 
-Transform your OpenClaw into an AI Executive Team. This skill creates coordinated personas (CTO, CPO, CMO) that think strategically, challenge assumptions, and help you make better decisions.
+Transform your OpenClaw into an AI Executive Team. Creates specialized personas (CTO, CPO, CMO, CFO) with their own Discord channels, shared context, and intelligent guardrails.
 
 ## What You Get
 
-| Persona | Role | Channel |
-|---------|------|---------|
-| **Ada ✦** | CTO | #engineering |
-| **Grace 🚀** | CPO | #product |
-| **Tony 🔥** | CMO | #marketing |
+- **Executive Personas** — AI C-suite with specialized expertise
+- **Discord Channels** — Dedicated channel per persona
+- **Shared Knowledge** — Notion workspace for decisions, goals, context
+- **Guardrails** — Cost controls, rate limits, loop prevention
+- **Board Meetings** — Cross-persona strategic discussions
 
-Optional: Val (CFO), Bucky (Research), Sentinel (Ops)
-
-## Prerequisites
-
-- OpenClaw running with Discord connected
-- Discord bot token with `Manage Channels` permission
-- Discord server where you want Control Tower
-
-## Setup Flow
+## Quick Setup
 
 When user asks to set up Control Tower:
 
-### Step 1: Gather Requirements
+1. **Ask which personas they want:**
+   - CTO (Chief Technology Officer) — Architecture, technical decisions
+   - CPO (Chief Product Officer) — Roadmap, features, user insights
+   - CMO (Chief Marketing Officer) — Positioning, growth, content
+   - CFO (Chief Financial Officer) — Budget, metrics, runway
+   - Custom persona (user-defined)
 
-Ask the user:
-1. "Which Discord server should I set up Control Tower in?" (list their servers if possible)
-2. "Which personas do you want? Default is Ada (CTO), Grace (CPO), Tony (CMO). Want all three or different?"
-3. "What's your company/project name?" (for persona context)
+2. **Collect prerequisites:**
+   - Discord server (must have Manage Channels permission)
+   - Guild ID from Discord (right-click server → Copy Server ID)
+   - Notion API key (optional, for knowledge base)
 
-### Step 2: Create Channels
+3. **Create the infrastructure:**
+   - Discord category: "🗼 Control Tower"
+   - Channel per persona: #engineering, #product, #marketing, #finance
+   - Deploy persona-specific system prompts
 
-For each selected persona, create a Discord channel:
+4. **Configure guardrails** (see references/guardrails.md)
 
-```bash
-# Use Discord API via curl or the discord skill if available
-# Channel names: engineering, product, marketing, finance, research, ops
-```
+5. **Test with a board meeting prompt**
 
-Execute the channel creation script:
-```
-scripts/create_channels.sh <guild_id> <bot_token> <personas>
-```
+## Creating Discord Channels
 
-### Step 3: Deploy Persona Prompts
+Use the discord tool to create the structure:
 
-Update the OpenClaw config to add system prompts for each channel.
-
-Reference the persona templates in `references/personas.md`.
-
-Config structure:
 ```json
 {
-  "channels": {
-    "discord": {
-      "guilds": {
-        "<guild_id>": {
-          "channels": {
-            "<channel_id>": {
-              "enabled": true,
-              "systemPrompt": "<persona_prompt>"
-            }
-          }
-        }
-      }
-    }
-  }
+  "action": "categoryCreate",
+  "guildId": "<GUILD_ID>",
+  "name": "🗼 Control Tower"
 }
 ```
 
-### Step 4: Configure Guardrails
+Then create channels under the category:
 
-Apply default guardrails:
-- External actions require confirmation
-- Rate limiting for API calls
-- Budget awareness
+```json
+{
+  "action": "channelCreate",
+  "guildId": "<GUILD_ID>",
+  "name": "engineering",
+  "type": 0,
+  "parentId": "<CATEGORY_ID>",
+  "topic": "Ada's lab — architecture, technical decisions, code"
+}
+```
 
-Reference `references/guardrails.md` for defaults.
+Repeat for each persona channel. See references/channel-config.md for full specs.
 
-### Step 5: Test the Setup
+## Persona System Prompts
 
-Prompt user to test:
-1. "Go to #engineering and say hello to Ada"
-2. "Ask Grace in #product what to prioritize"
-3. "Get Tony in #marketing to draft a tweet"
+Each persona needs a unique system prompt. The base structure:
 
-Confirm all personas respond correctly.
+```
+You are [NAME], the [ROLE] of [COMPANY].
 
-### Step 6: Optional Integrations
+Your expertise: [DOMAIN AREAS]
+Your communication style: [TRAITS]
+Your decision framework: [APPROACH]
 
-If user wants:
-- **Notion**: Connect shared memory workspace
-- **GitHub**: Link repositories for code context
-- **Telegram**: Set up mobile access
+You collaborate with other executives:
+- [OTHER PERSONA 1] in #[CHANNEL]
+- [OTHER PERSONA 2] in #[CHANNEL]
 
-## Commands
+When you need expertise outside your domain, tag the relevant exec.
+When decisions require consensus, call for a board meeting.
+```
 
-| Command | Description |
-|---------|-------------|
-| `setup control tower` | Full guided setup |
-| `add persona <name>` | Add a new executive persona |
-| `list personas` | Show active personas |
-| `configure guardrails` | Adjust safety settings |
-| `test board meeting` | Run a test conversation across personas |
+See references/personas.md for complete prompts.
 
-## Persona Customization
+## Guardrails Configuration
 
-Users can customize personas:
-- "Make Ada more formal"
-- "Tony should be less hype-y"
-- "Add a CFO named Val"
+Control Tower requires guardrails to prevent runaway costs:
 
-When customizing, update the channel's systemPrompt in OpenClaw config.
+```yaml
+guardrails:
+  maxA2AHops: 5          # Kill runaway loops
+  dailyTokenBudget: 100000
+  alertAt: 0.8           # Alert at 80% budget
+  sessionRateLimit: 20/min
+  approvalThreshold: 10000  # Tokens requiring approval
+```
+
+Apply via gateway config. See references/guardrails.md for implementation.
+
+## Notion Integration (Optional)
+
+If user provides Notion API key, create the knowledge workspace:
+
+1. Company Context database
+2. Decisions Log database
+3. Strategic Questions database
+4. Board Meetings database
+
+See references/notion-template.md for database schemas.
+
+## Testing the Setup
+
+After setup, run a test board meeting:
+
+> "Call a board meeting to discuss our Q1 priorities"
+
+Each persona should:
+- Respond in their channel
+- Stay in their expertise lane
+- Reference shared context if available
+- Tag other execs when needed
 
 ## Troubleshooting
 
-**Bot can't create channels**: Check bot has `Manage Channels` permission.
+**Personas not responding:**
+- Check Discord channel permissions
+- Verify bot has access to channels
+- Confirm channel routing in openclaw config
 
-**Personas not responding**: Verify channel IDs in OpenClaw config match actual Discord channels.
+**Loops between personas:**
+- Check maxA2AHops guardrail is active
+- Review session logs for loop patterns
 
-**Wrong persona in channel**: Check systemPrompt is set for the correct channel ID.
+**Cost overruns:**
+- Verify dailyTokenBudget is set
+- Check if alertAt threshold is firing
+- Review which persona is burning tokens
 
-## Files
+## Capabilities
 
-- `scripts/create_channels.sh` — Creates Discord channels via API
-- `scripts/generate_config.py` — Generates OpenClaw config snippet
-- `references/personas.md` — Full persona prompt templates
-- `references/guardrails.md` — Default guardrail settings
+This skill provides:
+
+- `setup_control_tower` — Full guided setup flow
+- `add_persona` — Add a new executive persona
+- `remove_persona` — Remove an executive persona
+- `configure_guardrails` — Set cost/rate limits
+- `connect_notion` — Link Notion knowledge base
+- `run_board_meeting` — Trigger cross-persona discussion
+- `show_status` — Display Control Tower health
+
+## References
+
+- [Persona Prompts](references/personas.md) — System prompts for each executive
+- [Channel Config](references/channel-config.md) — Discord channel specifications
+- [Guardrails](references/guardrails.md) — Safety configuration
+- [Notion Template](references/notion-template.md) — Knowledge base schema
