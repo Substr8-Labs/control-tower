@@ -304,6 +304,147 @@ tailscale funnel status
 
 ---
 
+## 8. Optional Hardening (Recommended)
+
+These steps are optional but recommended for production deployments.
+
+### Fail2ban (Brute Force Protection)
+
+Fail2ban monitors logs and bans IPs that show malicious signs (failed logins, etc.).
+
+```bash
+# Install
+sudo apt update && sudo apt install -y fail2ban
+
+# Create local config (survives updates)
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+
+# Edit jail.local
+sudo nano /etc/fail2ban/jail.local
+```
+
+Key settings in `jail.local`:
+
+```ini
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+```
+
+Enable and start:
+
+```bash
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+# Check status
+sudo fail2ban-client status sshd
+```
+
+**Note:** With Tailscale (no public SSH), Fail2ban is less critical but still useful as defense in depth.
+
+### Unattended Security Updates
+
+Automatically apply security patches without manual intervention.
+
+```bash
+# Install
+sudo apt update && sudo apt install -y unattended-upgrades
+
+# Enable automatic updates
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+
+Configure `/etc/apt/apt.conf.d/50unattended-upgrades`:
+
+```bash
+// Auto-reboot if required (optional - set time for low-traffic period)
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+
+// Email notifications (optional)
+Unattended-Upgrade::Mail "your-email@example.com";
+Unattended-Upgrade::MailReport "on-change";
+```
+
+Create `/etc/apt/apt.conf.d/20auto-upgrades`:
+
+```bash
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+```
+
+Verify it's working:
+
+```bash
+sudo unattended-upgrade --dry-run --debug
+```
+
+### Log Shipping (Future: Centralized Monitoring)
+
+For multi-server deployments, ship logs to a central location.
+
+**Option A: Simple — rsyslog to remote server**
+
+```bash
+# On VPS, edit /etc/rsyslog.conf
+*.* @your-log-server:514  # UDP
+# or
+*.* @@your-log-server:514 # TCP
+```
+
+**Option B: Modern — Vector + Loki/Elasticsearch**
+
+```bash
+# Install Vector
+curl -sSL https://sh.vector.dev | bash
+
+# Configure /etc/vector/vector.toml
+[sources.journald]
+type = "journald"
+
+[sinks.loki]
+type = "loki"
+endpoint = "https://your-loki-instance"
+inputs = ["journald"]
+```
+
+**Option C: Cloud — Ship to provider's logging**
+
+- DigitalOcean: Built-in monitoring
+- AWS: CloudWatch agent
+- GCP: Cloud Logging agent
+
+**For MVP:** Skip log shipping. Use local journalctl. Add centralized logging when you have multiple Control Tower instances.
+
+### Intrusion Detection (Advanced)
+
+For high-security deployments:
+
+```bash
+# Install AIDE (file integrity monitoring)
+sudo apt install -y aide
+
+# Initialize database
+sudo aideinit
+
+# Run checks
+sudo aide --check
+```
+
+**For MVP:** Skip this. Add when you're handling sensitive customer data.
+
+---
+
 ## Cloud Provider Notes
 
 ### Hostinger
@@ -323,6 +464,8 @@ For providers that support it (DigitalOcean, Vultr), we can create:
 
 ## Summary
 
+### Required (Do These First)
+
 | Layer | Hardening |
 |-------|-----------|
 | Access | SSH keys only, no root, non-root user |
@@ -330,6 +473,15 @@ For providers that support it (DigitalOcean, Vultr), we can create:
 | Services | User-level systemd, secrets in env files |
 | Node.js | Linuxbrew node (avoid NSolid trap) |
 | Operations | Health monitoring, daily restart, log checks |
+
+### Optional (Recommended for Production)
+
+| Feature | Purpose | Priority |
+|---------|---------|----------|
+| Fail2ban | Block brute force attacks | Medium |
+| Unattended upgrades | Auto-patch security vulnerabilities | High |
+| Log shipping | Centralized monitoring | Low (for MVP) |
+| AIDE | File integrity monitoring | Low (for MVP) |
 
 ---
 
