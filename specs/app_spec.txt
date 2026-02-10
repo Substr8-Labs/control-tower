@@ -1,0 +1,543 @@
+<project_specification>
+  <project_name>tower-hq</project_name>
+
+  <overview>
+    Control Tower HQ is a purpose-built chat application that gives solo founders access 
+    to an AI executive team. It replaces Discord with a clean, focused interface designed 
+    specifically for strategic conversations with AI personas (CTO, CPO, CMO, CFO) in 
+    dedicated channels. The app is a thin client that routes messages to an OpenClaw backend.
+  </overview>
+
+  <technology_stack>
+    <frontend>
+      <framework>Next.js 14 with App Router</framework>
+      <styling>Tailwind CSS</styling>
+      <state_management>React hooks and Zustand</state_management>
+      <routing>Next.js App Router</routing>
+      <port>3000</port>
+    </frontend>
+    <backend>
+      <runtime>Next.js API routes</runtime>
+      <database>PostgreSQL with Prisma ORM</database>
+      <auth>NextAuth.js with magic link email</auth>
+      <port>3000</port>
+    </backend>
+    <communication>
+      <api>RESTful endpoints with fetch</api>
+      <realtime>Polling with optimistic updates</realtime>
+    </communication>
+  </technology_stack>
+
+  <prerequisites>
+    <environment_setup>
+      - Node.js 18+ installed
+      - npm or pnpm package manager
+      - PostgreSQL database (or Vercel Postgres)
+      - Email provider for magic links (Resend recommended)
+      - OpenClaw Gateway URL and token
+    </environment_setup>
+  </prerequisites>
+
+  <core_features>
+    <landing_page>
+      - User can view landing page with hero section and value proposition
+      - User can see the four AI personas with descriptions
+      - User can click "Get Started" to navigate to signup
+      - Landing page displays professional dark theme design
+      - Landing page shows pricing or waitlist CTA
+    </landing_page>
+
+    <authentication>
+      - User can enter email on signup page
+      - User receives magic link email within 30 seconds
+      - User can click magic link to authenticate
+      - System creates user account on first login
+      - System creates default tower and channels on signup
+      - User is redirected to app after authentication
+      - User can logout and session is invalidated
+      - Unauthenticated users are redirected to login page
+    </authentication>
+
+    <onboarding>
+      - New user sees welcome modal explaining the personas
+      - User can enter company name during onboarding
+      - User can optionally add company context/description
+      - User can skip onboarding and fill in later
+      - Onboarding state is saved so it only shows once
+    </onboarding>
+
+    <sidebar_navigation>
+      - User sees sidebar with channel list
+      - Sidebar shows tower name at top
+      - User can click channel to navigate
+      - Active channel is visually highlighted
+      - Sidebar collapses to icons on mobile
+      - User can see unread indicators on channels
+    </sidebar_navigation>
+
+    <channel_general>
+      - User can chat in #general channel
+      - Any relevant persona responds based on topic
+      - Messages display with persona name and avatar
+      - Channel maintains conversation history
+    </channel_general>
+
+    <channel_engineering>
+      - User can chat in #engineering channel
+      - Ada (CTO) responds with green accent color
+      - Ada provides technical architecture advice
+      - Ada helps with implementation decisions
+    </channel_engineering>
+
+    <channel_product>
+      - User can chat in #product channel
+      - Grace (CPO) responds with yellow accent color
+      - Grace provides product strategy advice
+      - Grace helps with feature prioritization
+    </channel_product>
+
+    <channel_marketing>
+      - User can chat in #marketing channel
+      - Tony (CMO) responds with pink accent color
+      - Tony provides growth and messaging advice
+      - Tony helps with positioning and content
+    </channel_marketing>
+
+    <channel_finance>
+      - User can chat in #finance channel
+      - Val (CFO) responds with red accent color
+      - Val provides business model advice
+      - Val helps with runway and metrics
+    </channel_finance>
+
+    <channel_decisions>
+      - User can chat in #decisions channel
+      - All personas can participate in decisions
+      - Channel logs important decisions for reference
+      - User can review past decisions
+    </channel_decisions>
+
+    <chat_interface>
+      - User can type message in input field
+      - User can press Enter or click send button
+      - Message appears immediately in chat (optimistic)
+      - User sees typing indicator while AI responds
+      - AI response appears with smooth animation
+      - Chat auto-scrolls to newest message
+      - User can scroll up to view history
+      - Messages show relative timestamps
+    </chat_interface>
+
+    <message_display>
+      - User messages display on right side
+      - AI messages display on left with persona avatar
+      - Messages support markdown formatting
+      - Code blocks display with syntax highlighting
+      - Long messages are readable without horizontal scroll
+      - Messages display persona name and emoji
+    </message_display>
+
+    <typing_indicator>
+      - User sees typing indicator when AI is processing
+      - Indicator shows which persona is typing
+      - Indicator animates with bouncing dots
+      - Indicator disappears when response arrives
+    </typing_indicator>
+
+    <message_history>
+      - User can scroll up to see past messages
+      - System loads messages in batches of 50
+      - User sees loading indicator when fetching more
+      - History persists across sessions
+      - History is stored in database per channel
+    </message_history>
+
+    <settings_page>
+      - User can access settings from header
+      - User can update display name
+      - User can update company name
+      - User can update company context
+      - Settings save immediately with feedback
+    </settings_page>
+
+    <company_context>
+      - User can add company background text
+      - Context is sent to AI with each message
+      - Context helps personas give relevant advice
+      - User can update context anytime
+    </company_context>
+
+    <export_feature>
+      - User can export conversation history
+      - Export format is markdown
+      - Export includes all channels
+      - Export includes timestamps and persona names
+    </export_feature>
+
+    <responsive_design>
+      - Layout adapts to mobile screens (375px)
+      - Layout adapts to tablet screens (768px)
+      - Sidebar becomes overlay on mobile
+      - Touch gestures work for navigation
+      - Input field adjusts for mobile keyboard
+    </responsive_design>
+
+    <dark_theme>
+      - App uses dark theme by default
+      - Background is dark gray (#0f0f0f)
+      - Text is light gray (#e5e5e5)
+      - Accent colors are vibrant for contrast
+      - Dark theme is easy on the eyes
+    </dark_theme>
+
+    <error_handling>
+      - User sees error toast if message fails to send
+      - User can retry failed messages
+      - App handles network disconnection gracefully
+      - Error states display helpful messages
+      - App recovers automatically when connection returns
+    </error_handling>
+
+    <loading_states>
+      - App shows loading spinner on initial load
+      - Skeleton loaders display while fetching data
+      - Buttons show loading state when processing
+      - Transitions are smooth (150-300ms)
+    </loading_states>
+
+    <persona_avatars>
+      - Ada displays green colored avatar
+      - Grace displays yellow colored avatar
+      - Tony displays pink colored avatar
+      - Val displays red colored avatar
+      - Avatars show first letter or emoji
+    </persona_avatars>
+
+    <keyboard_shortcuts>
+      - User can press / to focus input
+      - User can press Escape to blur input
+      - User can press Cmd+K for quick actions
+      - Shortcuts work consistently across app
+    </keyboard_shortcuts>
+
+    <api_layer>
+      - API validates authentication on all endpoints
+      - API returns 401 for unauthenticated requests
+      - API returns 403 for unauthorized tower access
+      - API validates input and returns 400 for errors
+      - API handles OpenClaw gateway communication
+    </api_layer>
+
+    <openclaw_integration>
+      - System sends messages to OpenClaw gateway
+      - System includes channel and persona context
+      - System includes company context in requests
+      - System handles gateway errors gracefully
+      - Response is parsed and displayed to user
+    </openclaw_integration>
+  </core_features>
+
+  <database_schema>
+    <tables>
+      <users>
+        - id (PRIMARY KEY, uuid)
+        - email (UNIQUE, NOT NULL)
+        - name
+        - created_at, updated_at
+      </users>
+      <towers>
+        - id (PRIMARY KEY, uuid)
+        - user_id (FOREIGN KEY -> users.id)
+        - name (NOT NULL)
+        - company_name
+        - company_context (text)
+        - created_at, updated_at
+      </towers>
+      <channels>
+        - id (PRIMARY KEY, uuid)
+        - tower_id (FOREIGN KEY -> towers.id)
+        - name (NOT NULL, e.g., general, engineering)
+        - persona (nullable, e.g., ada, grace, tony, val)
+        - created_at
+      </channels>
+      <messages>
+        - id (PRIMARY KEY, uuid)
+        - channel_id (FOREIGN KEY -> channels.id)
+        - role (enum: user, assistant)
+        - content (text, NOT NULL)
+        - persona (nullable, for assistant messages)
+        - created_at
+      </messages>
+      <sessions>
+        - id (PRIMARY KEY)
+        - session_token (UNIQUE)
+        - user_id (FOREIGN KEY -> users.id)
+        - expires
+      </sessions>
+    </tables>
+  </database_schema>
+
+  <api_endpoints_summary>
+    <authentication>
+      - POST /api/auth/signin/email (send magic link)
+      - GET /api/auth/callback/email (verify magic link)
+      - GET /api/auth/session (get current session)
+      - POST /api/auth/signout (logout)
+    </authentication>
+    <user>
+      - GET /api/user (get current user)
+      - PUT /api/user (update user profile)
+    </user>
+    <tower>
+      - GET /api/tower (get user's tower)
+      - PUT /api/tower (update tower settings)
+    </tower>
+    <channels>
+      - GET /api/channels (list all channels)
+      - GET /api/channels/:name (get channel by name)
+    </channels>
+    <messages>
+      - GET /api/channels/:name/messages (list messages, paginated)
+      - POST /api/channels/:name/messages (send message)
+    </messages>
+    <chat>
+      - POST /api/chat (send to OpenClaw, get response)
+    </chat>
+    <export>
+      - GET /api/export (export all conversations as markdown)
+    </export>
+  </api_endpoints_summary>
+
+  <ui_layout>
+    <main_structure>
+      - Header with tower name and settings icon
+      - Sidebar on left with channel list
+      - Main content area for chat
+      - Input bar fixed at bottom
+    </main_structure>
+    <sidebar>
+      - Tower name at top with logo
+      - List of channels with icons
+      - Each channel shows # prefix
+      - Active channel highlighted
+      - Settings link at bottom
+    </sidebar>
+    <chat_area>
+      - Messages scroll vertically
+      - User messages aligned right
+      - AI messages aligned left with avatar
+      - Typing indicator at bottom of messages
+    </chat_area>
+    <input_bar>
+      - Text input stretches full width
+      - Send button on right
+      - Placeholder shows current channel
+      - Disabled state when sending
+    </input_bar>
+  </ui_layout>
+
+  <design_system>
+    <color_palette>
+      - Background: #0f0f0f (dark)
+      - Surface: #1a1a1a (cards, sidebar)
+      - Border: #2a2a2a
+      - Text Primary: #e5e5e5
+      - Text Secondary: #a0a0a0
+      - Primary Accent: #3b82f6 (blue)
+      - Ada (CTO): #10b981 (green)
+      - Grace (CPO): #f59e0b (yellow/amber)
+      - Tony (CMO): #ec4899 (pink)
+      - Val (CFO): #ef4444 (red)
+      - Error: #ef4444
+      - Success: #10b981
+    </color_palette>
+    <typography>
+      - Font family: Inter, system-ui, sans-serif
+      - Headings: font-semibold
+      - Body: font-normal, text-base
+      - Small: text-sm for secondary text
+      - Code: JetBrains Mono, Consolas, monospace
+    </typography>
+    <spacing>
+      - Sidebar width: 240px (desktop), 64px (collapsed)
+      - Message padding: 16px
+      - Input height: 48px
+      - Border radius: 8px for cards, 4px for buttons
+    </spacing>
+    <animations>
+      - Transitions: 150ms ease
+      - Message fade in: 200ms
+      - Sidebar collapse: 200ms
+      - Typing indicator bounce: 1.2s infinite
+    </animations>
+  </design_system>
+
+  <key_interactions>
+    <user_flow_signup>
+      1. User lands on homepage
+      2. User clicks "Get Started"
+      3. User enters email address
+      4. User receives magic link email
+      5. User clicks magic link
+      6. System creates account and tower
+      7. User sees welcome modal with personas
+      8. User enters company name (optional)
+      9. User lands in #general channel
+    </user_flow_signup>
+    <user_flow_chat>
+      1. User clicks on a channel
+      2. User types message in input
+      3. User presses Enter or clicks send
+      4. Message appears immediately (optimistic)
+      5. Typing indicator shows
+      6. AI response streams in
+      7. Response appears with animation
+      8. Chat scrolls to bottom
+    </user_flow_chat>
+    <user_flow_settings>
+      1. User clicks settings icon in header
+      2. Settings page opens
+      3. User updates company context
+      4. User clicks save
+      5. Toast confirms save successful
+      6. User returns to chat
+    </user_flow_settings>
+  </key_interactions>
+
+  <implementation_steps>
+    <step number="1">
+      <title>Project Setup and Database</title>
+      <tasks>
+        - Initialize Next.js 14 with App Router
+        - Configure Tailwind CSS with dark theme
+        - Set up Prisma with PostgreSQL schema
+        - Create database migrations
+        - Set up environment variables
+      </tasks>
+    </step>
+    <step number="2">
+      <title>Authentication with NextAuth</title>
+      <tasks>
+        - Install and configure NextAuth.js
+        - Set up email provider for magic links
+        - Create auth API routes
+        - Build login and signup pages
+        - Add session management
+        - Create auth middleware for protected routes
+      </tasks>
+    </step>
+    <step number="3">
+      <title>Core Layout and Navigation</title>
+      <tasks>
+        - Build main app layout component
+        - Create responsive sidebar
+        - Build channel list navigation
+        - Add header with settings link
+        - Implement mobile responsive behavior
+      </tasks>
+    </step>
+    <step number="4">
+      <title>Chat Interface</title>
+      <tasks>
+        - Build message list component
+        - Create message input with send button
+        - Add message display with formatting
+        - Implement typing indicator
+        - Add auto-scroll behavior
+        - Create loading states
+      </tasks>
+    </step>
+    <step number="5">
+      <title>Message API and Database</title>
+      <tasks>
+        - Create message API routes
+        - Implement message creation endpoint
+        - Add message fetching with pagination
+        - Store messages in database
+        - Add optimistic updates on send
+      </tasks>
+    </step>
+    <step number="6">
+      <title>OpenClaw Integration</title>
+      <tasks>
+        - Create chat API route
+        - Implement OpenClaw gateway client
+        - Add persona and channel context
+        - Include company context in requests
+        - Handle gateway errors
+      </tasks>
+    </step>
+    <step number="7">
+      <title>Settings and User Profile</title>
+      <tasks>
+        - Build settings page
+        - Create company context editor
+        - Add user profile update
+        - Implement export functionality
+        - Add toast notifications
+      </tasks>
+    </step>
+    <step number="8">
+      <title>Landing Page</title>
+      <tasks>
+        - Design and build hero section
+        - Create persona showcase section
+        - Add pricing or waitlist section
+        - Ensure responsive design
+        - Add animations and polish
+      </tasks>
+    </step>
+    <step number="9">
+      <title>Onboarding Flow</title>
+      <tasks>
+        - Create welcome modal component
+        - Build company name input step
+        - Add onboarding state tracking
+        - Implement skip functionality
+        - Create smooth transitions
+      </tasks>
+    </step>
+    <step number="10">
+      <title>Polish and Testing</title>
+      <tasks>
+        - Test all user flows end-to-end
+        - Fix edge cases and errors
+        - Add keyboard shortcuts
+        - Optimize performance
+        - Ensure accessibility
+        - Final UI polish
+      </tasks>
+    </step>
+  </implementation_steps>
+
+  <success_criteria>
+    <functionality>
+      - User can sign up and receive magic link in under 30 seconds
+      - User can chat in all 6 channels
+      - AI responds within 10 seconds
+      - Messages persist across sessions
+      - Export produces valid markdown
+    </functionality>
+    <user_experience>
+      - Signup to first message in under 60 seconds
+      - Intuitive navigation without instructions
+      - Responsive on mobile (375px) and desktop
+      - Fast load times under 2 seconds
+      - Clear feedback for all actions
+    </user_experience>
+    <technical_quality>
+      - Clean, maintainable code structure
+      - Type-safe with TypeScript
+      - Secure authentication
+      - Proper error handling
+      - No console errors in production
+    </technical_quality>
+    <design_polish>
+      - Consistent dark theme throughout
+      - Smooth animations
+      - Professional appearance
+      - Discord-like familiarity
+      - Persona colors used consistently
+    </design_polish>
+  </success_criteria>
+</project_specification>
